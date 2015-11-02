@@ -1,0 +1,12 @@
+Source and markdown code fall under the Apache License 2.0
+http://www.apache.org/licenses/LICENSE-2.0.html
+
+Graphic assets (including all figures) fall under
+Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International
+http://creativecommons.org/licenses/by-nc-nd/4.0/
+
+(Use it for noncommercial purposes, but don't modify it
+and attribbute the source.)
+
+The name "Quanopt" and the Quanopt logo are trademarks of
+Quanopt Inc. (http://www.quanopt.com)

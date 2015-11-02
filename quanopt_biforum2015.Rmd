@@ -1,0 +1,458 @@
+---
+title: "Shiny as a platform for collaborative data exploration"
+author: Imre Kocsis (kocsis@quanopt.com), research director, Quanopt Ltd.
+date: Budapest BI Forum 2015, 2015.10.14.
+runtime: shiny
+output: 
+  ioslides_presentation:
+    logo: figs/quan_small.png
+    css: css/my.css
+---
+
+<!--
+###############################################################
+# R markdown script for the dynamic version of the presentation
+# held on Shiny at BI Forum 2015 Budapest
+#
+# Author: Imre Kocsis
+# Date: 2015.10.20.
+#
+# Source and markdown code fall under the Apache License 2.0
+# http://www.apache.org/licenses/LICENSE-2.0.html
+#
+# Graphic assets (including all figures) fall under
+# Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International
+# http://creativecommons.org/licenses/by-nc-nd/4.0/
+#
+# The name "Quanopt" and the Quanopt logo are trademarks of
+# Quanopt Inc. (http://www.quanopt.com)
+###############################################################
+-->
+
+# About us
+
+## The company
+
+- system/process analysis and optimization "consulting"
+
+- automotive tooling development
+
+- **R&D spinoff**
+    + founders: professors & and lecturers
+    + [**Dept. of Measurement and Inf. Systems**](http://www.inf.mit.bme.hu) @BME
+    + course highlights: 'Big Data' Analysis Techniques, Cyber-Physical Systems, Intelligent Data Analysis, System Modelling
+
+> - **[Budapest R meetup](http://www.meetup.com/budapest-users-of-r-network/)**: pizza, beer, presentations, 2 organizers
+
+## Data analysis competencies at Quanopt
+<div style="width: 100%;">
+<div style="width: 60%; float: left; display: inline-block;padding-right:30px;">
+**Critical cloud applications**
+
+Manufacturing processes
+
+Electronic equipment testing
+
+Effort models for safety-critical software development processes
+
+Fraud detection for service provider
+</div>
+<div style="width: 40%;display:inline-block;">
+<img src="figs/ds.png"/>
+</div>
+</div>
+
+## Quanopt and R
+You touch data - you have to speak some R (and you will see the light, we promise)
+
+But a **manageable** investment - stats is the hard part, lang is easy
+
+- Main use cases
+    + **Visualization**: R is nigh unbeatable
+    + "Exploratory Data Analysis"
+    + Modeling - from descriptive models to [neural networks](http://www.inside-r.org/howto/time-series-analysis-and-order-prediction-r)
+    + Data cleaning and tidying
+
+# Shiny: an overview
+
+## Shiny: a web framework for R
+From [RStudio](http://shiny.rstudio.com/)
+<br><br><br>
+Web page layout and logic: write an R function
+
+Server logic: write an R function
+
+Page updates: reactive network of variables (as in Excel)
+<br><br><br>
+Run locally (RStudio!) / shiny server / <http://shinyapps.io>
+
+## A simplistic example
+<div id="wrap">
+<div id="done" class="smallercode" style="width: 50%; float: left; display: inline-block;">
+ui.R
+```{r, eval=FALSE}
+
+shinyUI(fluidPage(
+  selectInput("iris_mvar",
+    "Iris property:",
+    choices=colnames(iris)[1:4]),
+    plotOutput("boxplot")))
+```
+server.R
+```{r, eval=FALSE}
+shinyServer(
+  function(input,output){
+    output$boxplot <- renderPlot(
+      boxplot(get(input$iris_mvar) ~
+      Species, data=iris))}))
+```
+</div>
+
+<div id="dtwo" style="width: 50%; display: inline-block;">
+```{r, echo = FALSE}
+
+shinyApp(
+
+  ui=fluidPage(
+    selectInput("iris_mvar", "Iris property:", choices=colnames(iris)[1:4]),
+  plotOutput("boxplot")
+  ),
+  
+  server=function(input,output){
+   output$boxplot <- renderPlot(boxplot(get(input$iris_mvar) ~ Species, data=iris)) 
+  }
+)
+```
+</div>
+</div>
+
+## Reactive programming
+<div class="imagestretch">
+![Reactive programming - by the example of Excel](figs/icacon1.png)
+</div>
+Note: prices have been obfuscated
+
+## Reactive programming
+<div class="imagestretch">
+![Reactive programming - by the example of Excel](figs/icacon2.png)
+</div>
+
+## Reactive programming
+<div class="imagestretch">
+![Reactive programming - by the example of Excel](figs/icacon3.png)
+</div>
+
+## Tweets mentioning "BudapestBI" - query with button
+```{r, echo = FALSE, message=FALSE}
+# FOR THIS TO WORK, YOU HAVE TO SUPPLY YOUR OWN TWITTER CREDENTIALS.
+# (And remember to have base64enc installed.)
+library(twitteR)
+library(ggplot2)
+
+secr <- read.table(file = "/home/ikocsis/Desktop/twtok.txt", 
+                   sep=c("="), header=F, stringsAsFactors=F)
+
+actok <- secr[1,2]
+acsecr <- secr[2,2]
+conskey <- secr[3,2]
+conssecr <- secr[4,2]
+
+bitweeters <- function(){
+  
+  origop <- options("httr_oauth_cache")
+  options(httr_oauth_cache=TRUE)
+  setup_twitter_oauth(conskey,conssecr,actok, acsecr)
+  options(httr_oauth_cache=origop)
+  
+  tweets <- searchTwitter("BudapestBI", n = 100)
+  
+  scrn <- sapply(tweets, screenName)
+  crtd <- sapply(tweets, created)
+  
+  data.frame(screenname=scrn, created=crtd)
+}
+
+shinyApp(
+  ui=fluidPage(
+    actionButton("goButton", "Go!"),
+    checkboxInput("rotate", "Rotate figure"),
+    plotOutput("biplot")
+  ),
+  
+  server=function(input, output){
+    
+    currenttweets <- reactive({
+      a <- NULL
+     if(input$goButton > 0) {
+        a <- bitweeters()}
+      a
+    })
+    
+    output$biplot <- renderPlot({
+      p <- qplot(screenname, data=currenttweets(), geom="bar")
+      if(input$rotate) {p <- p + coord_flip()}
+      print(p)
+    })
+  })
+```
+
+## The code - server
+```{r, eval=FALSE}
+function(input, output){
+    ###<b>
+    currenttweets <- reactive({
+      a <- NULL
+      if(input$goButton > 0) {
+        a <- bitweeters()}
+      a
+    })
+    ###</b>
+    
+    output$biplot <- renderPlot({
+      p <- qplot(screenname, data=currenttweets(), geom="bar")
+      if(input$rotate) {p <- p + coord_flip()}
+      print(p)
+    })
+```
+
+## And for the sake of completeness
+```{r, eval=FALSE}  
+library(twitteR)
+library(ggplot2)
+    
+bitweeters <- function(){
+  origop <- options("httr_oauth_cache")
+  options(httr_oauth_cache=TRUE)
+  setup_twitter_oauth(conskey,conssecr,actok, acsecr)
+  options(httr_oauth_cache=origop)
+
+  ###<b>  
+  tweets <- searchTwitter("BudapestBI", n = 100)
+  ###</b>
+  
+  scrn <- sapply(tweets, screenName)
+  crtd <- sapply(tweets, created)
+  
+  data.frame(screenname=scrn, created=crtd)
+}
+```
+
+## Invalidation and recomputation
+```{r, echo=FALSE}
+addResourcePath("reactlog", "./reactlog/")
+```
+<iframe src="http://localhost:8888/reactlog/reactlog.html"/>
+
+## Other technicalities
+- you can _isolate_ the usage of a reactive var
+
+- _observers_ for side effects upon changes
+
+- all the usual HTML inputs
+
+- reasonable layout control
+
+- reasonable set of outputs (with renderers) + htmlwidgets
+
+- UI customization: HTML, JavaScript, CSS
+
+- server function can have session parameter
+
+- **important, but not covered: interactive graphics**
+
+## Dynamic UI | or towards intractable hacking
+```{r, echo=FALSE}
+library(shiny)
+library(ggplot2)
+
+dataframe1 <- mtcars
+dataframe2 <- faithful;
+
+
+a <- function(input, output) {
+
+  output$colselect <- renderUI({
+    if(input$dataSelect == "cars") {
+      selectInput("colSelect", "Select column:",
+                 names(dataframe1))
+    } else {
+      selectInput("colSelect", "Select column:",
+                  names(dataframe2))
+    }
+  })
+
+  output$selected <- renderText({
+    paste("You have selected: ", input$colSelect)
+  })}
+  
+b <- fluidPage(
+  # Application title
+  titlePanel("Demo Example 1"),
+
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("dataSelect", "Select dataframe:",
+                  c("mtcars" = "cars",
+                    "old faithful" = "faith")),
+      uiOutput("colselect")
+    ),
+
+    mainPanel(
+      textOutput("selected")
+    )
+  )
+)
+
+shinyApp(ui=b, server=a)
+```
+
+## renderUI for uiOutput
+```{r, eval=FALSE}
+function(input, output) {
+  output$colselect <- renderUI({
+    if(input$dataSelect == "cars") {
+      selectInput("colSelect", "Select column:", names(dataframe1))
+    } else {
+      selectInput("colSelect", "Select column:", names(dataframe2))
+    }
+  })
+  
+  output$selected <- renderText({
+    paste("You have selected: ", input$colSelect)
+  })}
+```
+
+Could be different control types
+
+And you can do cascading (**but don't**!)
+
+# Use case #1 | EDA on public cloud benchmark campaigns
+
+## Scenario
+Cloud automation & availability project
+
+An awful lot of perf. benchmark campaigns
+
+To specify "the plots" for the Big BI DW Tool
+
+R/Shiny begun as a band-aid
+
+<img id="clz" src="figs/cloud.png" width=300 align="right">
+
+## Results
+<img id="ec2" src="figs/ec2.png" width="100%">
+
+## Lessons learned
+*Very* positive reception (Because shiny.)
+
+In the given context: visualization >> "statistics"
+
+First usable prototypes: *very* fast
+
+Put it in a VPN - and suddenly it's a tool for **collaboration**
+<br><br><br>
+
+DB normalization and evolution massively worked against us
+
+Deep, dynamic tree of DB-driven input controls: **AVOID!**
+
+The whole thing got a bit sluggish (mostly ggplot2)
+
+# If it works... (?)
+## Similar projects, similar usage
+<div>
+<div style="width: 50%; float: left; display: inline-block;padding-right:30px;>
+Electronic equipment testing (BIG data)
+
+**Currently: fault injection on telco cloud applications**
+</div>
+<div style="width: 50%; display: inline-block;padding-right:30px;>
+<img src="figs/interf.png" width="100%" align="right">
+</div>
+</div>
+<br><br>
+Web-based, "mouse-only" exploration
+
+Small teams, project-internal usage; findings recorded separately
+
+Source of all griefs: ID variables
+
+# "Decision making support" | Let stakeholders convince themselves
+## Educational cloud: Apache VCL
+<img src="figs/vcl.png" height="400"/>
+
+## How do students behave?
+<img src="figs/profiles.png" width="100%"/>
+
+## The app
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+addResourcePath("www", file.path(getwd(), "calc", "www"))
+source("./calc/server.R")
+source("./calc/ui.R")
+
+shinyApp(server = calcserv, ui = calcui)
+```
+
+# My impression of shiny
+## Shiny: pro's
+- Inside its design envelope: a breeze
+
+- For me this includes no JavaScript
+
+- Almost full R ecosystem
+
+- By far not only "toy apps"
+
+- ... But you probably want to stop at "workgroup applications"
+
+## Shiny: con's and things to keep in mind
+- No notion of
+    + page flow (single page)
+    + _analysis_ flow
+    + recording & replaying app state
+
+- Keep layout dynamics unsophisticated
+
+- Is the reactive model really enough for you?
+
+- You still develop R (with "reactivity") - maintenance?
+
+## Shiny: con's and things to keep in mind
+- Stepping out of the box: R scripting morphs into web development
+
+- Don't confuse it with full-fledged tools (no Watson for free)
+
+- optimal case: your code and data in R; OR you need something from R
+
+- This can be simply ggplot2, mind you
+
+- Server/PaaS pricing
+
+- (Interactive graphics - incl. linked selection & highlighting)
+
+## Final thoughts
+- Fun! :)
+
+- Check it out: <http://shiny.rstudio.com>
+
+- Professional setting: think about the risks (and whys)
+
+- Under development: making objects of the analyzed system first-class citizens in shiny-based visualization
+
+- Currently: too observation-based (interpretation?)
+
+## Thanks
+<br>
+<div>
+<div style="width: 50%; float: left; display: inline-block;padding-right:30px;>
+<http://quanopt.com>
+
+<br><br>
+**Mail**
+
+kocsis@quanopt.com
+
+ikocsis@mit.bme.hu
+</div>
+<div style="width: 50%; display: inline-block;padding-right:30px;>
+</div>

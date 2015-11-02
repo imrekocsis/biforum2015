@@ -1,0 +1,18 @@
+{
+    "contents" : "###############################################################\n# R script for running the dynamic version of the presentation\n# held on Shiny at BI Forum 2015 Budapest\n#\n# Author: Imre Kocsis\n# Date: 2015.10.20.\n#\n# Source and markdown code fall under the Apache License 2.0\n# http://www.apache.org/licenses/LICENSE-2.0.html\n#\n# Graphic assets (including all figures) fall under\n# Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International\n# http://creativecommons.org/licenses/by-nc-nd/4.0/\n#\n# The name \"Quanopt\" and the Quanopt logo are trademarks of\n# Quanopt Inc. (http://www.quanopt.com)\n###############################################################\n\n# Prerequsites for running the dynamic version of the presentation:\n\n# twitteR account and API keys, if you want to use the twitter search \"slide\"\n\n# the \"cost calculator\" application, if you want to show that (still company internal)\n# various packages needed by these (important: 'base64enc' for the 'twitteR' package.\n# It does not even go into details - just fails with a generic error message if it's\n# not present.)\n\n# Also note that if you want to print the static version, you need an _old_ version of Chrome (e.g. 30).\n# Nicely \"printing\" the dynamic presentation is hopeless.\n\noptions(shiny.host=\"0.0.0.0\")\noptions(shiny.port=8888)\nrmarkdown::run(\"./quanopt_biforum2015.Rmd\")",
+    "created" : 1446472352658.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "4202086919",
+    "id" : "3901DE75",
+    "lastKnownWriteTime" : 1446476329,
+    "path" : "~/Desktop/biforum2015/shiny_version_runner.R",
+    "project_path" : "shiny_version_runner.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "type" : "r_source"
+}
